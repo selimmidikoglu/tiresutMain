@@ -2,11 +2,12 @@ import {observable,action,autorun, toJS} from 'mobx';
 
 
 class GlobalStore {
-    @observable newAdress = {adressName: '',city:'İzmir',district:'',neighborhood:'',streetNumber:'',no:'',buildingName: '',floor:'',apartment:'',postalCode:'35040',location:{latitude:0,longitude:0},country:'Turkey'}
+    @observable newAdress = {addressName: '',addressDescription:'',addressMainDescription: '',city:'İzmir',district:'',neighborhood:'',streetNumber:'',no:'',buildingName: '',floor:'',apartment:'',postalCode:'',coordinates:{latitude:0,longitude:0},country:'Turkey'}
     @observable showProducts = [];
     @observable text = "Hi I am selim ";
     //variable to keep the total price of the basket
     @observable addressComponent = [];
+    @observable adressToBoSent = {};
     @observable totalPrice = 0;
     @observable products = {count: 0,productsAdded : []};
     @observable counter = 0;
@@ -16,12 +17,14 @@ class GlobalStore {
     @observable name = '';
     @observable phone_number = '';
     @observable password = '';
+    @observable userID = '';
     @observable page = 'home'
     @observable productToAdd = {_id: '', name: '', imageUrl: '', price: 0.0 , finalPrice: 0.0, quantity: 1 }
     @observable addressOption = '';
     @observable clone = [];
     @observable adresses = [];
-    addAdressName(text){
+    @observable previousOrders = [];
+    /*addAdressName(text){
         this.newAdress.adressName = text;
     }
     addDistrict(text){
@@ -54,7 +57,7 @@ class GlobalStore {
     }
     addLocation(location){
         this.newAdress.location.longitude = location.longitude;
-    }
+    }*/
 
     getNewAdressText(){
         var newAdressToSearch = ''
@@ -76,6 +79,12 @@ class GlobalStore {
         for (let i = 0; i < adresses.length; i++) {
             const element = adresses[i];
             this.adresses.push(element);
+        }
+    }
+    addOrders(previousOrders){
+        for (let i = 0; i < previousOrders.length; i++) {
+            const element = previousOrders[i];
+            this.previousOrders.push(element);
         }
     }
     removeProduct(name){

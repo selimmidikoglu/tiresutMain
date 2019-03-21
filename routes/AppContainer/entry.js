@@ -62,14 +62,19 @@ var userInfo = {
                       },
                       body: JSON.stringify(userInfo),
                     }).then(result => {
-                        console.log(result);
+                        console.log('------------------------------------------');
+                        console.log(JSON.parse(result._bodyInit));
+                        var responseResult = JSON.parse(result._bodyInit);
                         if(result.status == 200){
-                            GlobalStore.phone_number=userInfo.phone_number;
-                            GlobalStore.name = userInfo.name;
-                            GlobalStore.password =userInfo.password;
-                            var bodyInit = JSON.parse(result._bodyInit);
-                            console.log(bodyInit.result.adresses);
-                            GlobalStore.addAdresses(bodyInit.result.adresses);
+                            GlobalStore.phone_number=responseResult.result.phone_number;
+                            GlobalStore.name = responseResult.result.name;
+                            GlobalStore.password =responseResult.result.password;
+                            GlobalStore.userID =responseResult.result._id;
+                           
+                            console.log(responseResult.result.adresses);
+                            console.log(responseResult.result.orders);
+                            GlobalStore.addAdresses(responseResult.result.adresses);
+                            GlobalStore.addOrders(responseResult.result.orders);
                             if(userInfo.type == 'user' || userInfo.type == null){
                                 //this.setState({signUpOrLogin:'goToBottomNav'})
                                 this.props.navigation.navigate('BottomNavigation');

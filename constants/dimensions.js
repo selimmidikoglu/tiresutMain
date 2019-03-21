@@ -15,7 +15,7 @@ var design = {
         orderType : height*2/14,
         giveOrder : height*1/14,
     },
-    addAdressPage: {
+    /*addAdressPage: {
         backButton: height*1/14,
         district : height *1/14,
         neighborhood: height *1/14,
@@ -24,6 +24,12 @@ var design = {
         floor: height*1/14,
         description: height* 4/14,
         textInputLongWidth: width -30,
+    }*/
+    addAdressPage: {
+        tabBar: height *0.8/14,
+        mapView: height *4/14,
+        formView: height * 6/14,
+        saveButton: height * 1/14,
     }
 
 }

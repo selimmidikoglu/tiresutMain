@@ -1,5 +1,5 @@
 import React,{Component} from 'react';
-import {Platform, Image,StyleSheet,Picker, Dimensions,TextInput,Text, ScrollView,Button,Keyboard,Animated,TouchableWithoutFeedback, TouchableOpacity, TouchableHighlight, TouchableNativeFeedback, View,ActivityIndicator} from 'react-native';
+import {Platform, Image,StyleSheet,Picker, Alert,Dimensions,TextInput,Text, ScrollView,Button,Keyboard,Animated,TouchableWithoutFeedback, TouchableOpacity, TouchableHighlight, TouchableNativeFeedback, View,ActivityIndicator} from 'react-native';
 //icons
 import Icon from 'react-native-vector-icons/Ionicons';
 //map packages
@@ -12,11 +12,11 @@ import { observer } from "mobx-react/native";
 import hostURL from '../../../../constants/hostURL';
 import design from '../../../../constants/dimensions';
 //keyboard dismiss
-
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 //keyboard avoid
 import {KeyboardAvoidingView} from 'react-native';
-
+var newAdress = {addressName: '',addressDescription:'',addressMainDescription: '',city:'İzmir',district:'',neighborhood:'',streetNumber:'',no:'',buildingName: '',floor:'',apartment:'',postalCode:'',coordinates:{latitude:0,longitude:0},country:'Turkey'}
 var adresses = [];
 adresses[0] = GlobalStore.addressComponent[0];
 adresses[1] = GlobalStore.addressComponent[1];
@@ -33,28 +33,42 @@ console.log(adresses);
        loadingMap : true,
        viewHeight: 500,
        buttonHeight: 200,
-       selectedAddress : ''
+       selectedAddress : GlobalStore.addressComponent[0].address_components[2].long_name + ", " + GlobalStore.addressComponent[0].address_components[1].long_name + ", No: " + GlobalStore.addressComponent[0].address_components[0].long_name,
     }
-    this.keyboardHeight = new Animated.Value(0);
-    this.imageHeight = new Animated.Value(200);
 }
 componentDidMount(){
-    
+        
 
   
         navigator.geolocation.getCurrentPosition(
             (position) => {
+
                 GlobalStore.changeCoordinates(position.coords.latitude,position.coords.longitude);
+                Geocoder.from (GlobalStore.latitude, GlobalStore.longitute)
+                .then (json => {
+                  var addressComponent = json; //s[0].address_components[0];
+                  console.log(addressComponent.results);
+                  GlobalStore.addressComponent = addressComponent.results;
+                  console.log(GlobalStore.addressComponent);
+                  GlobalStore.addressComponent.map((a) => {
+                    console.log( "Hyadar" + a.formatted_address)
+                  })
+                  console.log("Ev");
+                  console.log (addressComponent);
+                })
+                .catch (error => console.warn (error));
                 console.log("Global latitude " + GlobalStore.latitude + "Global longitude "+ GlobalStore.longitute );
                 console.log(GlobalStore.addressComponent);
                 console.log( GlobalStore.addressComponent[0])
                 adresses[0] = GlobalStore.addressComponent[0];
                 adresses[1] = GlobalStore.addressComponent[1];   
                 adresses[2] = GlobalStore.addressComponent[2];
+                this.setState({selectedAddress: GlobalStore.addressComponent[1].address_components[2].long_name + ", "+ GlobalStore.addressComponent[1].address_components[1].long_name + ", No:" + GlobalStore.addressComponent[1].address_components[0].long_name});
                 console.log(adresses);
                 this.setState({loadingMap:false});
                 //this.keyboardDidShowListener = Keyboard.addListener('keyboardDidHide',this.keyboardWillShow);
                 //this.keyboardDidHideListener = Keyboard.addListener('keyboardDidShow',this.keyboardWillHide);
+                
                 error: null; 
             },
             (error) => this.setState({ error: error.message }),
@@ -63,36 +77,6 @@ componentDidMount(){
         );
     
 }
-componentWillUnmount() {
-    this.keyboardDidShowListener.remove();
-    this.keyboardDidHideListener.remove();
-}
-
-keyboardWillShow = (event) => {
-    Animated.parallel([
-      Animated.timing(this.keyboardHeight, {
-        duration: event.duration,
-        toValue: event.endCoordinates.height,
-      }),
-      Animated.timing(this.imageHeight, {
-        duration: event.duration,
-        toValue: 75,
-      }),
-    ]).start();
-  };
-
-  keyboardWillHide = (event) => {
-    Animated.parallel([
-      Animated.timing(this.keyboardHeight, {
-        duration: event.duration,
-        toValue: 0,
-      }),
-      Animated.timing(this.imageHeight, {
-        duration: event.duration,
-        toValue: 200,
-      }),
-    ]).start();
-  };
 
 changeAlert(){
     if(!this.state.alert){
@@ -153,9 +137,15 @@ renderAlert(){
 renderMain1(){
     if(!this.state.loadingMap){
       return(
-        <View style={{flex:1,backgroundColor:'red'}}>
+        <View style={{flex:1,backgroundColor:'red', position:'relative'}}>
         <MapView
             provider={PROVIDER_GOOGLE} // remove if not using Google Maps
+            //style={styles.map1}
+            /*showsScale
+            showsCompass
+            showsPointsOfInterest
+            showsBuildings*/
+  
             style={styles.map1}
             initialRegion={{
               latitude: GlobalStore.latitude,
@@ -165,8 +155,7 @@ renderMain1(){
             }}
             showUserLocation
           > 
-            {!!GlobalStore.latitude &&
-              !!GlobalStore.longitute &&
+            {GlobalStore.latitude != null && GlobalStore.longitude != null &&
               <MapView.Marker
                 coordinate={{
                   latitude: GlobalStore.latitude,
@@ -176,172 +165,51 @@ renderMain1(){
               />}
           </MapView>
           <View style={{width:40,height:40,marginTop:5,marginLeft:5, borderRadius:20,position:'absolute'}}>
-                    <TouchableOpacity onPress={()=>this.props.navigation.goBack()}>
+                    <TouchableOpacity onPress={()=>this.props.navigation.navigate('AddAdressOrChoose')}>
                         <View style={{width:40,backgroundColor:'rgba(28,222,92,0.4)',height:40,borderRadius:20, alignItems:'center',justifyContent:'center'}}>
                             <Icon name="ios-arrow-back" color="white" size={25}/>
                         </View>
                     </TouchableOpacity>
-                </View> 
+          </View> 
           </View>
       );
     }
     else{
       return (
         <View style={{flex:1,alignItems:'center',justifyContent:'center'}}>
-          <ActivityIndicator size="large"></ActivityIndicator>
-      </View>
-      )
+            <ActivityIndicator size="large"></ActivityIndicator>
+        </View>
+        )
+      
     }
 }
-/*renderMain(){
-    return(
-
-          <View style={{flex:1}}>
-            <View style={{flexDirection:'row',width:design.width,height:design.addAdressPage.backButton,backgroundColor:'green'}}>
-                <View style={{width:50,height:'100%',marginLeft:10,alignItems:'center',justifyContent: 'center',}}>
-                    <TouchableOpacity onPress={()=>this.props.navigation.goBack()}>
-                        <View style={{width:50,height:'100%'}}>
-                            <Icon name="ios-arrow-back" color="white" size={32}/>
-                        </View>
-                    </TouchableOpacity>
-                </View> 
-            </View>
-            <View style={{flexDirection:'row',width:design.width,height:design.addAdressPage.district}}>
-                <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:10}}>
-                    <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Adres Adı:</Text>
-                </View>
-                <View style={{flex:9,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                    <TextInput placeholder = "Ev, İşyeri, Yazlık vb." style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}} 
-                    onChangeText={(text) => GlobalStore.addAdressName=text} />
-                </View>
-            </View>
-            <View style={{flexDirection:'row',width:design.width,height:design.addAdressPage.district}}>
-                <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:10}}>
-                    <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Semt/İlçe:</Text>
-                </View>
-                <View style={{flex:9,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                    <TextInput placeholder = "Bornova, Karşıyaka vb." style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                    onChangeText={(text) => GlobalStore.newAdress.district=text} />
-                </View>
-            </View>
-            <View style={{flexDirection:'row',width:design.width,height:design.addAdressPage.district}}>
-                <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:10}}>
-                    <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Mahalle:</Text>
-                </View>
-                <View style={{flex:9,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                    <TextInput placeholder = "Gül Mahallesi, Gazi Sokak vb." style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                    onChangeText={(text) => GlobalStore.newAdress.neighborhood=text}/>
-                </View>
-            </View>
-            <View style={{flexDirection:'row',width:design.width,height:design.addAdressPage.district}}>
-                <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:10}}>
-                    <Text style={{color:'white',fontSize:15,textAlign:'left'}}>No:</Text>
-                </View>
-                <View style={{flex:9,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                    <TextInput placeholder = "14 4/1 vb." style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                    onChangeText={(text) => GlobalStore.newAdress.no=text}/>
-                </View>
-                
-            </View>
-            <View style={{flexDirection:'row',width:design.width,height:design.addAdressPage.district}}>
-                <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:10}}>
-                    <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Bina Adı:</Text>
-                </View>
-                <View style={{flex:9,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                    <TextInput placeholder = "Tarla Apartman, Bulgar İş Hanı vb." style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                    onChangeText={(text) => GlobalStore.newAdress.buildingName=text}/>
-                </View>
-                
-            </View>
-            <View style={{flexDirection:'row',width:design.width,height:design.addAdressPage.district}}>
-                <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:10}}>
-                    <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Kat:</Text>
-                </View>
-                <View style={{flex:3,width:200,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1}}>
-                    <TextInput placeholder = "" style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                     onChangeText={(text) => GlobalStore.newAdress.floor=text}/>
-                </View>
-                <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:30}}>
-                    <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Daire:</Text>
-                </View>
-                <View style={{flex:3,width:200,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                    <TextInput placeholder = "" style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                     onChangeText={(text) => GlobalStore.newAdress.apartment=text}/>
-                </View>
-                
-            </View>
-            <View style={{flexDirection:'row',width:design.width,height:design.addAdressPage.district}}>
-            <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:10}}>
-                <Text style={{color:'white',fontSize:15,textAlign:'left'}}>No:</Text>
-            </View>
-            <View style={{flex:3,width:200,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1}}>
-                <TextInput placeholder = "" style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                 onChangeText={(text) => GlobalStore.newAdress.no=text}/>
-            </View>
-            <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:30}}>
-                <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Pos.Kodu:</Text>
-            </View>
-            <View style={{flex:3,width:200,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                <TextInput  placeholder = "" style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                 onChangeText={(text) => GlobalStore.newAdress.postalCode=text}/>
-            </View>
-            <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:30}}>
-                <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Pos.Kodu:</Text>
-            </View>
-            <View style={{flex:3,width:200,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                <TextInput  placeholder = "" style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                 onChangeText={(text) => GlobalStore.newAdress.postalCode=text}/>
-            </View>
-            <View style={{flex:3,alignItems:'flex-start',justifyContent:'flex-end',marginLeft:30}}>
-                <Text style={{color:'white',fontSize:15,textAlign:'left'}}>Pos.Kodu:</Text>
-            </View>
-            <View style={{flex:3,width:200,alignItems:'flex-start',justifyContent:'flex-end',borderBottomColor: 'white',borderBottomWidth:1,marginRight:20}}>
-                <TextInput  placeholder = "" style={{width:'100%',color:'white',marginBottom:0,textAlignVertical:'bottom'}}
-                 onChangeText={(text) => GlobalStore.newAdress.postalCode=text}/>
-            </View>
-            
-        </View>
-        </View>
-        
-        
-    );
-}
-renderMapView(){
-  if(this.state.addButtonClicked){
-    if (this.state.loadingMap) {
-      return <ActivityIndicator size="large" color="yellow" />;
-    } else {
-      return (
-        <View style={styles.container}>
-          
-          <MapView
-            provider={PROVIDER_GOOGLE} // remove if not using Google Maps
-            style={styles.map1}
-            initialRegion={{
-              latitude: GlobalStore.newAdress.location.latitude,
-              longitude: GlobalStore.newAdress.location.longitude,
-              latitudeDelta: 0.09,
-              longitudeDelta: 0.09,
-            }}
-            showUserLocation
-          > 
-            {!!this.state.latitude &&
-              !!this.state.longitude &&
-              <MapView.Marker
-                coordinate={{
-                  latitude: GlobalStore.newAdress.location.latitude,
-                  longitude: GlobalStore.newAdress.location.longitude,
-                }}
-                title={'Şu anki konumunuz'}
-              />}
-          </MapView>
-        </View>
-      );
-    }
-  } else {
-    return null;
+getModalWindow(){
+  if(newAdress.no == '' || newAdress.floor == '' || newAdress.addressName == '')
+  {
+  Alert.alert(
+    'Dikkat!',
+    'Gerekli alanları doldurun!',
+    [ {
+        text: 'Tamam',
+        onPress: () => console.log('Cancel Pressed'),
+        style: 'cancel',
+      }
+    ],
+    {cancelable: false},
+  );
   }
-}*/
+  newAdress.coordinates.latitude = GlobalStore.latitude;
+  newAdress.coordinates.longitude = GlobalStore.longitute;
+  newAdress.addressMainDescription = this.state.selectedAddress;
+  newAdress.streetNumber =  GlobalStore.addressComponent[0].address_components[1].long_name;
+  newAdress.neighborhood = GlobalStore.addressComponent[0].address_components[2].long_name;
+  newAdress.district =  GlobalStore.addressComponent[0].address_components[3].long_name;
+  newAdress.postalCode =  GlobalStore.addressComponent[0].address_components[6].long_name;
+  console.log(this.state.selectedAddress);
+  console.log(newAdress);
+  
+}
+
 renderMainOrAlert(){
     if(!this.state.alert){
         return (
@@ -363,38 +231,106 @@ renderMainOrAlert(){
 }
 render(){
     return (
-      <TouchableWithoutFeedback onPress={ () => Keyboard.dismiss()}>
-        <View style={{flex:1}}>
-         
-            <View style={{flex:1}}>
-            {this.renderMain1()}
-            </View>
-            <View style={{flex:2,marginTop:10,alignItems:'center'}}>
-              <View  style={{borderColor:'green',borderWidth:1, borderRadius:25,height: 50, width: design.width-30}}>
-              <Picker
-                selectedValue={this.state.selectedAddress}
-                itemStyle={{fontSize:13,color:'green'}}
-                style={{borderColor:'green',borderWidth:2,fontSize:13, borderRadius:25,height: 50, width: design.width-30}}
-                onValueChange={(itemValue, itemIndex) =>
-                  this.setState({selectedAddress: itemValue})}
-                >
-                <Picker.Item style={{fontSize:13}} label = {GlobalStore.addressComponent[0].formatted_address} value = {GlobalStore.addressComponent[0].formatted_address}/>
-                <Picker.Item style={{fontSize:13}} label = {GlobalStore.addressComponent[1].formatted_address} value = {GlobalStore.addressComponent[1].formatted_address}/>
-                
-              </Picker>
-              </View>
-              <View style={{flexDirection:'row',justifyContent:'space-between', width: design.width-30,marginTop:10}}>
-                <View style={{flex:1,borderColor:'green',borderWidth:2,fontSize:13, borderRadius:25,height: 50}}>
-                  <TextInput style={{color:'black',fontSize:15}}  placeholder = "Bina Adı"></TextInput>
-                </View>
-                <View style={{flex:1,borderColor:'green',borderWidth:2,fontSize:13, borderRadius:25,height: 50}}>
-                  <TextInput textContentType="location" style={{color:'black',fontSize:15}} placeholder = "Kat/Daire"></TextInput>
-                </View>
+      <KeyboardAwareScrollView>
+      <TouchableWithoutFeedback onPress={ () => {Keyboard.dismiss()}}>
+          <View style={{flex:1}}>
+            <View style={{height: design.addAdressPage.tabBar, width: design.width}}>
+              <View style={{alignItems:'center',justifyContent:'center',width:design.width,backgroundColor:'green'}}>
+                <Text style={{alignSelf:'center' ,textAlign:'center',fontFamily:'Courgette-Regular',fontSize:design.addAdressPage.tabBar-10,color:'white'}}>Adres Ekle</Text>
               </View>
             </View>
+            <View style={{height: design.addAdressPage.mapView, width: design.width}}>
+              <MapView
+                provider={PROVIDER_GOOGLE} // remove if not using Google Maps
+                style={styles.map1}
+                initialRegion={{
+                  latitude: GlobalStore.latitude,
+                  longitude: GlobalStore.longitute,
+                  latitudeDelta: 0.0009,
+                  longitudeDelta: 0.0009,
+                }}
+                showUserLocation
+              > 
+                {this.state.loadingMap == false &&
+                  <MapView.Marker
+                    coordinate={{
+                      latitude: GlobalStore.latitude,
+                      longitude: GlobalStore.longitute,
+                    }}
+                    title={'Şu anki konumunuz'}
+                  />}
+              </MapView>
+              <View style={{width:40,height:40,marginTop:5,marginLeft:5, borderRadius:20,position:'absolute'}}>
+                <TouchableOpacity onPress={()=>this.props.navigation.navigate('AddAdressOrChoose')}>
+                    <View style={{width:40,backgroundColor:'rgba(28,222,92,0.4)',height:40,borderRadius:20, alignItems:'center',justifyContent:'center'}}>
+                        <Icon name="ios-arrow-back" color="white" size={25}/>
+                    </View>
+                </TouchableOpacity>
+              </View> 
+            </View>
+            <View style={{height: design.addAdressPage.formView, width: design.width,alignItems:'center'}}>
+              {/*<Text style={{alignSelf:'center' ,textAlign:'center',fontSize:12,color:'green'}}>Şu anki konumuzla ilişkilendirilmiş adres bilgileri doğru is geri kalan bilgileri doldurun, değilse yeni bir adres ekleyin.</Text>*/}
+              <View  style={{marginTop:5,borderColor:'green',borderWidth:2, borderRadius:5,height: design.addAdressPage.formView/5-5, width: design.width-30}}>
+                <Picker
+                  mode = "dropdown"
+                  selectedValue={this.state.selectedAddress}
+                  itemStyle={{fontSize:13,color:'green'}}
+                  //style={{borderColor:'green',borderWidth:2,fontSize:13, borderRadius:5,height: 50, width: design.width-30}}
+                  onValueChange={(itemValue, itemIndex) =>
+                    this.setState({selectedAddress: itemValue})}
+                  >
+                  <Picker.Item style={{fontSize:13}} label = {GlobalStore.addressComponent[1].address_components[2].long_name + ", "+ GlobalStore.addressComponent[1].address_components[1].long_name + ", No: "+ GlobalStore.addressComponent[1].address_components[0].long_name} value = {GlobalStore.addressComponent[1].address_components[2].long_name + ", "+ GlobalStore.addressComponent[1].address_components[1].long_name + ", No:" + GlobalStore.addressComponent[1].address_components[0].long_name}/>
+                  <Picker.Item style={{fontSize:13}} label = {GlobalStore.addressComponent[0].address_components[2].long_name + ", " + GlobalStore.addressComponent[0].address_components[1].long_name + ", No: " + GlobalStore.addressComponent[0].address_components[0].long_name} value = {GlobalStore.addressComponent[0].address_components[2].long_name + ", "+ GlobalStore.addressComponent[0].address_components[1].long_name +", No:" + GlobalStore.addressComponent[0].address_components[0].long_name}/>
+                  
+                </Picker>
+              </View>
+              <View style={{marginTop:5,width: (design.width-30),borderColor:'green',borderWidth:2,fontSize:13, borderRadius:5,height:design.addAdressPage.formView/5-5}}>
+                <TextInput style={{color:'black',fontSize:15}} 
+                onChangeText={(text) => {
+                  this.setState({selectedAddress:text});
+                  newAdress.addressMainDescription = this.state.selectedAddress;
+                }} 
+                value={this.state.selectedAddress} placeholder = {this.state.selectedAddress}></TextInput>
+              </View>
+              <View style={{flexDirection:'row',justifyContent:'space-between', width: design.width-30,marginTop:5,height:design.addAdressPage.formView/5-5}}>
+                <View style={{width: (design.width-30)/2-10,borderColor:'green',borderWidth:2,fontSize:13, borderRadius:5,height:design.addAdressPage.formView/5-5}}>
+                  <TextInput  style={{color:'black',fontSize:15}} onChangeText = {(text) => newAdress.addressName= text} placeholder = "Adres Adı"></TextInput>
+                </View>
+                <View style={{width: (design.width-30)/2-10,borderColor:'green',borderWidth:2,fontSize:13, borderRadius:5,height:design.addAdressPage.formView/5-5}}>
+                  <TextInput  style={{color:'black',fontSize:15}}  onChangeText = {(text) => newAdress.buildingName = text} placeholder = "Bina Adı"></TextInput>
+                </View>
+              </View>
+              <View style={{flexDirection:'row',justifyContent:'space-between', width: design.width-30,marginTop:5,height:design.addAdressPage.formView/5-5}}>
+                <View style={{width: (design.width-30)/2-10,borderColor:'green',borderWidth:2,fontSize:13, borderRadius:5,height: design.addAdressPage.formView/5-5}}>
+                  <TextInput  style={{color:'black',fontSize:15}}  onChangeText = {(text) => newAdress.no = text} placeholder = "No"></TextInput>
+                </View>
+                <View style={{width: (design.width-30)/2-10,borderColor:'green',borderWidth:2,fontSize:13, borderRadius:5,height: design.addAdressPage.formView/5-5}}>
+                  <TextInput   textContentType="location" onChangeText = {(text) => newAdress.floor = text} style={{color:'black',fontSize:15}} placeholder = "Kat/Daire"></TextInput>
+                </View>
+              </View>
+              <View style={{marginTop:5,width: (design.width-30),borderColor:'green',borderWidth:2,fontSize:13, borderRadius:5,height:design.addAdressPage.formView/5-5}}>
+                <TextInput style={{color:'black',fontSize:15}} onChangeText = {(text) => newAdress.addressDescription = text} placeholder ="Adres Tarifi"></TextInput>
+              </View>
+              
+            </View>
+            <View style={{alignSelf:'center', width: design.width-30,height:design.addAdressPage.saveButton,alignItems:'center',justifyContent:'center',marginTop: 5}}>
+                <TouchableOpacity onPress = {() => this.getModalWindow()}>
+                    <View style={{width: design.width-30,height:design.addAdressPage.saveButton,backgroundColor:'green',borderRadius:5, alignItems:'center',justifyContent:'center'}}>
+                      <Text style={{textAlign:'center',color:'white',fontWeight: 'bold', }}>Kaydet</Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
+          </View>
+
+      
             
-        </View>
-        </TouchableWithoutFeedback>
+            
+
+        
+      </TouchableWithoutFeedback>
+      </KeyboardAwareScrollView>
+      
+      
     )
 }
 
